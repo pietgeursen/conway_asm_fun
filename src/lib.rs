@@ -100,7 +100,8 @@ impl Conway {
         row: usize,
         col: usize,
     ) -> i8 {
-        let top_row: [i8; 8] = [
+        let neighbours = [
+            // Top
             board
                 .get(row.wrapping_sub(1))
                 .and_then(|column| column.get(col.wrapping_sub(1)))
@@ -116,13 +117,7 @@ impl Conway {
                 .and_then(|column| column.get(col + 1))
                 .map(|cell| *cell)
                 .unwrap_or_default(),
-            0,
-            0,
-            0,
-            0,
-            0,
-        ];
-        let middle_row: [i8; 8] = [
+            // Middle
             board
                 .get(row)
                 .and_then(|column| column.get(col.wrapping_sub(1)))
@@ -130,21 +125,10 @@ impl Conway {
                 .unwrap_or_default(),
             board
                 .get(row)
-                .and_then(|column| column.get(col))
-                .map(|cell| *cell)
-                .unwrap_or_default(),
-            board
-                .get(row)
                 .and_then(|column| column.get(col + 1))
                 .map(|cell| *cell)
                 .unwrap_or_default(),
-            0,
-            0,
-            0,
-            0,
-            0,
-        ];
-        let bottom_row: [i8; 8] = [
+            // bottom
             board
                 .get(row + 1)
                 .and_then(|column| column.get(col.wrapping_sub(1)))
@@ -160,22 +144,12 @@ impl Conway {
                 .and_then(|column| column.get(col + 1))
                 .map(|cell| *cell)
                 .unwrap_or_default(),
-            0,
-            0,
-            0,
-            0,
-            0,
         ];
+        let current_value = unsafe { *board.get_unchecked(row).get_unchecked(col) };
+        let neighbour_count = neighbours.iter().sum::<i8>();
 
-        let current_value = unsafe { board.get_unchecked(row).get_unchecked(col) };
-
-        let neighbour_count: i8 = top_row.into_iter().sum::<i8>()
-            + middle_row.into_iter().sum::<i8>()
-            + bottom_row.into_iter().sum::<i8>()
-            - current_value;
-
-        if (*current_value > 0 && (neighbour_count == 2 || neighbour_count == 3))
-            || (*current_value == 0 && neighbour_count == 3)
+        if (current_value > 0 && (neighbour_count == 2 || neighbour_count == 3))
+            || (current_value == 0 && neighbour_count == 3)
         {
             1
         } else {
@@ -189,7 +163,8 @@ impl Conway {
         col: usize,
     ) -> i8 {
         unsafe {
-            let top_row: [i8; 8] = [
+            let neighbours = [
+                // Top
                 board
                     .get(row.wrapping_sub(1))
                     .and_then(|column| column.get(col.wrapping_sub(1)))
@@ -205,13 +180,7 @@ impl Conway {
                     .and_then(|column| column.get(col + 1))
                     .map(|cell| *cell)
                     .unwrap_or_default(),
-                0,
-                0,
-                0,
-                0,
-                0,
-            ];
-            let middle_row: [i8; 8] = [
+                // Middle
                 board
                     .get(row)
                     .and_then(|column| column.get(col.wrapping_sub(1)))
@@ -219,21 +188,10 @@ impl Conway {
                     .unwrap_or_default(),
                 board
                     .get(row)
-                    .and_then(|column| column.get(col))
-                    .map(|cell| *cell)
-                    .unwrap_or_default(),
-                board
-                    .get(row)
                     .and_then(|column| column.get(col + 1))
                     .map(|cell| *cell)
                     .unwrap_or_default(),
-                0,
-                0,
-                0,
-                0,
-                0,
-            ];
-            let bottom_row: [i8; 8] = [
+                // bottom
                 board
                     .get(row + 1)
                     .and_then(|column| column.get(col.wrapping_sub(1)))
@@ -249,28 +207,15 @@ impl Conway {
                     .and_then(|column| column.get(col + 1))
                     .map(|cell| *cell)
                     .unwrap_or_default(),
-                0,
-                0,
-                0,
-                0,
-                0,
             ];
 
-            let top_row = Simd::from_slice(&top_row);
-            let middle_row = Simd::from_slice(&middle_row);
-            let bottom_row = Simd::from_slice(&bottom_row);
+            let current_value = *board.get_unchecked(row).get_unchecked(col);
 
-            //let board_rows = int8x8x3_t(top_row.into(), middle_row.into(), bottom_row.into());
-            //let neighbours = vtbl3_s8(board_rows, Self::BASE_LUT.into());
+            let neighbours = Simd::from_array(neighbours);
+            let neighbour_count = vaddv_s8(neighbours.into());
 
-            let current_value = board.get_unchecked(row).get_unchecked(col);
-            let neighbour_count = vaddv_s8(top_row.into()) + vaddv_s8(middle_row.into()) + vaddv_s8(bottom_row.into()) - current_value; 
-
-            //println!("top: {:?}, middle_row: {:?}, bottom: {:?}, neighbour_count: {neighbour_count}, current_value: {current_value}", top_row, middle_row, bottom_row );
-
-
-            if (*current_value > 0 && (neighbour_count == 2 || neighbour_count == 3))
-                || (*current_value == 0 && neighbour_count == 3)
+            if (current_value > 0 && (neighbour_count == 2 || neighbour_count == 3))
+                || (current_value == 0 && neighbour_count == 3)
             {
                 1
             } else {
