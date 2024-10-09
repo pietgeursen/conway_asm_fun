@@ -15,6 +15,7 @@ pub struct Conway {
 impl Conway {
     pub const BOARD_WIDTH: usize = 8;
     pub const BOARD_SIZE: usize = Self::BOARD_WIDTH * Self::BOARD_WIDTH;
+    // This restricts the max size of the board to 127*127
     pub const BASE_LUT: Simd<i8, 8> = Simd::from_array([
         1,
         -1,
@@ -220,6 +221,19 @@ mod test {
 
         assert_eq!(result, 0);
     }
+    #[test]
+    fn under_pop_it_dies_4() {
+        let mut board = [0i8; Conway::BOARD_SIZE];
+
+        board[7] = 1;
+        board[8] = 1;
+        board[9] = 1;
+
+        let result = Conway::next_cell_at_index(&board, 8);
+
+        assert_eq!(result, 0);
+    }
+
 
     #[test]
     fn over_pop_it_dies_1() {
