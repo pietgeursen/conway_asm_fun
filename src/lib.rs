@@ -100,57 +100,22 @@ impl Conway {
         row: usize,
         col: usize,
     ) -> i8 {
-        let neighbours = [
-            // Top
-            board
-                .get(row.wrapping_sub(1))
-                .and_then(|column| column.get(col.wrapping_sub(1)))
-                .map(|cell| *cell)
-                .unwrap_or_default(),
-            board
-                .get(row.wrapping_sub(1))
-                .and_then(|column| column.get(col))
-                .map(|cell| *cell)
-                .unwrap_or_default(),
-            board
-                .get(row.wrapping_sub(1))
-                .and_then(|column| column.get(col + 1))
-                .map(|cell| *cell)
-                .unwrap_or_default(),
-            // Middle
-            board
-                .get(row)
-                .and_then(|column| column.get(col.wrapping_sub(1)))
-                .map(|cell| *cell)
-                .unwrap_or_default(),
-            board
-                .get(row)
-                .and_then(|column| column.get(col + 1))
-                .map(|cell| *cell)
-                .unwrap_or_default(),
-            // bottom
-            board
-                .get(row + 1)
-                .and_then(|column| column.get(col.wrapping_sub(1)))
-                .map(|cell| *cell)
-                .unwrap_or_default(),
-            board
-                .get(row + 1)
-                .and_then(|column| column.get(col))
-                .map(|cell| *cell)
-                .unwrap_or_default(),
-            board
-                .get(row + 1)
-                .and_then(|column| column.get(col + 1))
-                .map(|cell| *cell)
-                .unwrap_or_default(),
-        ];
+        let neighbours = unsafe {
+            [
+                *board.get_unchecked(row - 1).get_unchecked(col - 1),
+                *board.get_unchecked(row - 1).get_unchecked(col),
+                *board.get_unchecked(row - 1).get_unchecked(col + 1),
+                *board.get_unchecked(row).get_unchecked(col - 1),
+                *board.get_unchecked(row).get_unchecked(col + 1),
+                *board.get_unchecked(row + 1).get_unchecked(col - 1),
+                *board.get_unchecked(row + 1).get_unchecked(col),
+                *board.get_unchecked(row + 1).get_unchecked(col + 1),
+            ]
+        };
         let current_value = unsafe { *board.get_unchecked(row).get_unchecked(col) };
         let neighbour_count = neighbours.iter().sum::<i8>();
 
-        if (current_value > 0 && (neighbour_count == 2 || neighbour_count == 3))
-            || (current_value == 0 && neighbour_count == 3)
-        {
+        if (current_value > 0 && neighbour_count == 2) || neighbour_count == 3 {
             1
         } else {
             0
@@ -164,49 +129,14 @@ impl Conway {
     ) -> i8 {
         unsafe {
             let neighbours = [
-                // Top
-                board
-                    .get(row.wrapping_sub(1))
-                    .and_then(|column| column.get(col.wrapping_sub(1)))
-                    .map(|cell| *cell)
-                    .unwrap_or_default(),
-                board
-                    .get(row.wrapping_sub(1))
-                    .and_then(|column| column.get(col))
-                    .map(|cell| *cell)
-                    .unwrap_or_default(),
-                board
-                    .get(row.wrapping_sub(1))
-                    .and_then(|column| column.get(col + 1))
-                    .map(|cell| *cell)
-                    .unwrap_or_default(),
-                // Middle
-                board
-                    .get(row)
-                    .and_then(|column| column.get(col.wrapping_sub(1)))
-                    .map(|cell| *cell)
-                    .unwrap_or_default(),
-                board
-                    .get(row)
-                    .and_then(|column| column.get(col + 1))
-                    .map(|cell| *cell)
-                    .unwrap_or_default(),
-                // bottom
-                board
-                    .get(row + 1)
-                    .and_then(|column| column.get(col.wrapping_sub(1)))
-                    .map(|cell| *cell)
-                    .unwrap_or_default(),
-                board
-                    .get(row + 1)
-                    .and_then(|column| column.get(col))
-                    .map(|cell| *cell)
-                    .unwrap_or_default(),
-                board
-                    .get(row + 1)
-                    .and_then(|column| column.get(col + 1))
-                    .map(|cell| *cell)
-                    .unwrap_or_default(),
+                *board.get_unchecked(row - 1).get_unchecked(col - 1),
+                *board.get_unchecked(row - 1).get_unchecked(col),
+                *board.get_unchecked(row - 1).get_unchecked(col + 1),
+                *board.get_unchecked(row).get_unchecked(col - 1),
+                *board.get_unchecked(row).get_unchecked(col + 1),
+                *board.get_unchecked(row + 1).get_unchecked(col - 1),
+                *board.get_unchecked(row + 1).get_unchecked(col),
+                *board.get_unchecked(row + 1).get_unchecked(col + 1),
             ];
 
             let current_value = *board.get_unchecked(row).get_unchecked(col);
@@ -214,9 +144,9 @@ impl Conway {
             let neighbours = Simd::from_array(neighbours);
             let neighbour_count = vaddv_s8(neighbours.into());
 
-            if (current_value > 0 && (neighbour_count == 2 || neighbour_count == 3))
-                || (current_value == 0 && neighbour_count == 3)
-            {
+            //if (current_value > 0 && (neighbour_count == 2 || neighbour_count == 3))
+            //    || (current_value == 0 && neighbour_count == 3)
+            if (current_value > 0 && neighbour_count == 2) || neighbour_count == 3 {
                 1
             } else {
                 0
