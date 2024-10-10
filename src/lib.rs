@@ -2,8 +2,8 @@
 
 use rand::random;
 use std::{
-    arch::aarch64::{int8x8x3_t, vadd_s8, vaddv_s8, vtbl3_s8},
-    simd::Simd,
+    arch::aarch64::{int8x8x3_t, vadd_s8, vaddv_s8, vld1_s8, vtbl3_s8},
+    simd::{ptr::SimdConstPtr, Simd},
 };
 
 pub struct Conway {
@@ -35,6 +35,7 @@ impl Conway {
         Self::BOARD_WIDTH as i8 * 2 + 1,
         Self::BOARD_WIDTH as i8 * 2 + 2,
     ]);
+    pub const ROW_LUT: Simd<usize, 8> = Simd::from_array([0, 1, 2, 0, 2, 0, 1, 2]);
 
     pub fn new() -> Self {
         let mut board_1 = [[0; Self::BOARD_WIDTH]; Self::BOARD_WIDTH];
@@ -129,23 +130,22 @@ impl Conway {
     ) -> i8 {
         unsafe {
             let neighbours = [
-                *board.get_unchecked(row - 1).get_unchecked(col - 1),
-                *board.get_unchecked(row - 1).get_unchecked(col),
-                *board.get_unchecked(row - 1).get_unchecked(col + 1),
-                *board.get_unchecked(row).get_unchecked(col - 1),
-                *board.get_unchecked(row).get_unchecked(col + 1),
-                *board.get_unchecked(row + 1).get_unchecked(col - 1),
-                *board.get_unchecked(row + 1).get_unchecked(col),
-                *board.get_unchecked(row + 1).get_unchecked(col + 1),
+                board.get_unchecked(row - 1).get_unchecked(col - 1),
+                board.get_unchecked(row - 1).get_unchecked(col),
+                board.get_unchecked(row - 1).get_unchecked(col + 1),
+                board.get_unchecked(row).get_unchecked(col - 1),
+                board.get_unchecked(row).get_unchecked(col + 1),
+                board.get_unchecked(row + 1).get_unchecked(col - 1),
+                board.get_unchecked(row + 1).get_unchecked(col),
+                board.get_unchecked(row + 1).get_unchecked(col + 1),
             ];
+
+            let neighbours = vld1_s8(*neighbours.get_unchecked(0) as _);
+
+            let neighbour_count = vaddv_s8(neighbours);
 
             let current_value = *board.get_unchecked(row).get_unchecked(col);
 
-            let neighbours = Simd::from_array(neighbours);
-            let neighbour_count = vaddv_s8(neighbours.into());
-
-            //if (current_value > 0 && (neighbour_count == 2 || neighbour_count == 3))
-            //    || (current_value == 0 && neighbour_count == 3)
             if (current_value > 0 && neighbour_count == 2) || neighbour_count == 3 {
                 1
             } else {
@@ -163,9 +163,9 @@ mod test {
     fn under_pop_it_dies_1() {
         let mut board = [[0; Conway::BOARD_WIDTH]; Conway::BOARD_WIDTH];
 
-        board[0][0] = 1;
+        board[1][1] = 1;
 
-        let result = Conway::next_cell_at_index(&board, 0, 0);
+        let result = Conway::next_cell_at_index(&board, 1, 1);
 
         assert_eq!(result, 0);
     }
@@ -174,9 +174,9 @@ mod test {
     fn under_pop_it_dies_2() {
         let mut board = [[0; Conway::BOARD_WIDTH]; Conway::BOARD_WIDTH];
 
-        board[7][0] = 1;
+        board[6][1] = 1;
 
-        let result = Conway::next_cell_at_index(&board, 7, 0);
+        let result = Conway::next_cell_at_index(&board, 6, 1);
 
         assert_eq!(result, 0);
     }
